@@ -167,7 +167,7 @@ const plainShapeObject = (type, attributes) => {
     if (props.indexOf(k) !== -1) {
       const v = attributes[ k ]
       const n = Number(v)
-      result[ k ] = n === NaN ? v : n
+      result[ k ] = Number.isNaN(n) ? v : n
     }
   })
 
