@@ -1,0 +1,235 @@
+import { toPath, toPoints } from 'svg-points'
+
+/**
+ * Shape data as specified by the
+ * {@link https://github.com/colinmeinke/points Points spec}.
+ *
+ * @typedef {Object[]} Points
+ */
+
+/**
+ * An SVG shape as defined by https://github.com/colinmeinke/svg-points.
+ *
+ * @typedef {Object} PlainShapeObject
+ */
+
+/**
+ * The data required to render a shape in Wilderness.
+ *
+ * @typedef {Object} FrameShape
+ *
+ * @property {Points} points
+ * @property {Object} attributes
+ * @property {FrameShape[]} childFrameShapes
+ */
+
+/**
+ * A DOM node.
+ *
+ * @typedef {Object} Node
+ */
+
+/**
+ * Wilderness' accepted node types.
+ */
+const nodeTypes = [
+  {
+    type: 'circle',
+    coreProps: [ 'cx', 'cy', 'r' ]
+  },
+  {
+    type: 'ellipse',
+    coreProps: [ 'cx', 'cy', 'rx', 'ry' ]
+  },
+  {
+    type: 'g',
+    coreProps: []
+  },
+  {
+    type: 'line',
+    coreProps: [ 'x1', 'x2', 'y1', 'y2' ]
+  },
+  {
+    type: 'path',
+    coreProps: [ 'd' ]
+  },
+  {
+    type: 'polygon',
+    coreProps: [ 'points' ]
+  },
+  {
+    type: 'polyline',
+    coreProps: [ 'points' ]
+  },
+  {
+    type: 'rect',
+    coreProps: [ 'height', 'rx', 'ry', 'width', 'x', 'y' ]
+  }
+]
+
+/**
+ * Core props for the defined node type.
+ *
+ * @param {string} type
+ *
+ * @returns {Object}
+ *
+ * @example
+ * coreProps('rect')
+ */
+const coreProps = type => nodeTypes.filter(node => node.type === type)[ 0 ].coreProps
+
+/**
+ * Creates a FrameShape from a Node.
+ *
+ * @param {Node} node
+ *
+ * @returns {FrameShape}
+ *
+ * @example
+ * frameShapeFromNode(node)
+ */
+const frameShape = el => {
+  const { attributes: attrs, childNodes, nodeName: type } = el
+  const attributes = {}
+
+  if (el.hasAttributes()) {
+    [ ...attrs ].map(({ name, value }) => {
+      attributes[ name ] = value
+    })
+  }
+
+  if (type === 'g') {
+    return {
+      attributes,
+      childFrameShapes: [ ...childNodes ].filter(validNode).map(frameShape)
+    }
+  }
+
+  return {
+    attributes: removeCoreProps(type, attributes),
+    points: toPoints(plainShapeObject(type, attributes))
+  }
+}
+
+/**
+ * Creates a group Node from a FrameShape array.
+ *
+ * @param {FrameShape[]} childFrameShapes
+ *
+ * @returns {Node}
+ *
+ * @example
+ * groupNode(childFrameShapes)
+ */
+const groupNode = childFrameShapes => {
+  const group = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+
+  childFrameShapes.map(node).map(n => group.appendChild(n))
+
+  return group
+}
+
+/**
+ * Creates a path Node from Points.
+ *
+ * @param {Points} points
+ *
+ * @returns {Node}
+ *
+ * @example
+ * pathNode(points)
+ */
+const pathNode = points => {
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+
+  path.setAttribute('d', toPath(points))
+
+  return path
+}
+
+/**
+ * Creates a Plain Shape Object from type and an attribute object.
+ *
+ * @param {string} type
+ * @param {Object} attributes
+ *
+ * @returns {PlainShapeObject}
+ *
+ * @example
+ * plainShapeObject('rect', attributes)
+ */
+const plainShapeObject = (type, attributes) => {
+  const props = coreProps(type)
+  const result = { type }
+
+  Object.keys(attributes).map(k => {
+    if (props.indexOf(k) !== -1) {
+      const v = attributes[ k ]
+      const n = Number(v)
+      result[ k ] = n === NaN ? v : n
+    }
+  })
+
+  return result
+}
+
+/**
+ * Creates a Node from a FrameShape.
+ *
+ * @param {FrameShape} frameShape
+ *
+ * @returns {Node}
+ *
+ * @example
+ * node(frameShape)
+ */
+const node = ({ attributes, childFrameShapes, points }) => {
+  const el = childFrameShapes
+    ? groupNode(childFrameShapes)
+    : pathNode(points)
+
+  Object.keys(attributes).map(attr => {
+    el.setAttribute(attr, attributes[ attr ])
+  })
+
+  return el
+}
+
+/**
+ * Removes type's core props from attributes object.
+ *
+ * @param {string} type
+ * @param {Object} attributes
+ *
+ * @returns {Object}
+ *
+ * @example
+ * removeCoreProps('rect', attributes)
+ */
+const removeCoreProps = (type, attributes) => {
+  const props = coreProps(type)
+  const result = {}
+
+  Object.keys(attributes).map(k => {
+    if (props.indexOf(k) === -1) {
+      result[ k ] = attributes[ k ]
+    }
+  })
+
+  return result
+}
+
+/**
+ * Is the node one of the accepted node types?
+ *
+ * @param {Node} node
+ *
+ * @returns {boolean}
+ *
+ * @example
+ * validNode(node)
+ */
+const validNode = ({ nodeName }) => nodeTypes.map(({ name }) => name).indexOf(nodeName) !== -1
+
+export { frameShape, node }
