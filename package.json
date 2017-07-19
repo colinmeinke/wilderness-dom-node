@@ -73,7 +73,7 @@
   "dependencies": {
     "svg-points": "^6.0.0"
   },
-  "description": "Converts SVG DOM node <> Frame Shape",
+  "description": "A set of functions to convert between SVG DOM nodes, Plain Shape Objects and Frame Shapes",
   "devDependencies": {
     "babel-cli": "^6.24.1",
     "babel-plugin-external-helpers": "^6.22.0",

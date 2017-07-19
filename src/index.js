@@ -30,6 +30,16 @@ import { toPath, toPoints } from 'svg-points'
  */
 
 /**
+ * The data from a Node that is useful in Frame Shape and Plain Shape Object creation.
+ *
+ * @typedef {Object} NodeData
+ *
+ * @property {Object} attributes - All HTML attributes of the Node.
+ * @property {Object[]} childNodes
+ * @property {string} type - The nodeName of the Node.
+ */
+
+/**
  * Wilderness' accepted node types.
  */
 const nodeTypes = [
@@ -104,7 +114,7 @@ const diff = (current, next) => {
 }
 
 /**
- * Creates a FrameShape from a Node.
+ * Creates a Frame Shape from a Node.
  *
  * @param {Node} node
  *
@@ -114,30 +124,23 @@ const diff = (current, next) => {
  * frameShapeFromNode(node)
  */
 const frameShape = el => {
-  const { attributes: attrs, childNodes, nodeName: type } = el
-  const attributes = {}
-
-  if (el.hasAttributes()) {
-    [ ...attrs ].map(({ name, value }) => {
-      attributes[ name ] = value
-    })
-  }
+  const { attributes, childNodes, type } = nodeData(el)
 
   if (type === 'g') {
     return {
       attributes,
-      childFrameShapes: [ ...childNodes ].filter(validNode).map(frameShape)
+      childFrameShapes: childNodes.filter(validNode).map(frameShape)
     }
   }
 
   return {
     attributes: removeCoreProps(type, attributes),
-    points: toPoints(plainShapeObject(type, attributes))
+    points: toPoints(plainShapeObjectFromAttrs(type, attributes))
   }
 }
 
 /**
- * Creates a group Node from a FrameShape array.
+ * Creates a group Node from a Frame Shape array.
  *
  * @param {FrameShape[]} childFrameShapes
  *
@@ -152,6 +155,51 @@ const groupNode = childFrameShapes => {
   childFrameShapes.map(node).map(n => group.appendChild(n))
 
   return group
+}
+
+/**
+ * Creates a Node from a Frame Shape.
+ *
+ * @param {FrameShape} frameShape
+ *
+ * @returns {Node}
+ *
+ * @example
+ * node(frameShape)
+ */
+const node = ({ attributes, childFrameShapes, points }) => {
+  const el = childFrameShapes
+    ? groupNode(childFrameShapes)
+    : pathNode(points)
+
+  Object.keys(attributes).map(attr => {
+    el.setAttribute(attr, attributes[ attr ])
+  })
+
+  return el
+}
+
+/**
+ * Creates Node Data given a Node.
+ *
+ * @param {Node} el
+ *
+ * @returns {NodeData}
+ *
+ * @example
+ * nodeData(el)
+ */
+const nodeData = el => {
+  const { attributes: attrs, childNodes, nodeName: type } = el
+  const attributes = {}
+
+  if (el.hasAttributes()) {
+    [ ...attrs ].map(({ name, value }) => {
+      attributes[ name ] = value
+    })
+  }
+
+  return { attributes, childNodes: [ ...childNodes ], type }
 }
 
 /**
@@ -173,6 +221,33 @@ const pathNode = points => {
 }
 
 /**
+ * Creates a Plain Shape Object from a Node.
+ *
+ * @param {Node} el
+ *
+ * @returns {PlainShapeObject}
+ *
+ * @example
+ * plainShapeObject(el)
+ */
+const plainShapeObject = el => {
+  const { attributes, childNodes, type } = nodeData(el)
+
+  if (type === 'g') {
+    return {
+      ...attributes,
+      type,
+      shapes: childNodes.filter(validNode).map(plainShapeObject)
+    }
+  }
+
+  return {
+    ...attributes,
+    ...plainShapeObjectFromAttrs(type, attributes)
+  }
+}
+
+/**
  * Creates a Plain Shape Object from type and an attribute object.
  *
  * @param {string} type
@@ -181,9 +256,9 @@ const pathNode = points => {
  * @returns {PlainShapeObject}
  *
  * @example
- * plainShapeObject('rect', attributes)
+ * plainShapeObjectFromAttrs('rect', attributes)
  */
-const plainShapeObject = (type, attributes) => {
+const plainShapeObjectFromAttrs = (type, attributes) => {
   const props = coreProps(type)
   const result = { type }
 
@@ -196,28 +271,6 @@ const plainShapeObject = (type, attributes) => {
   })
 
   return result
-}
-
-/**
- * Creates a Node from a FrameShape.
- *
- * @param {FrameShape} frameShape
- *
- * @returns {Node}
- *
- * @example
- * node(frameShape)
- */
-const node = ({ attributes, childFrameShapes, points }) => {
-  const el = childFrameShapes
-    ? groupNode(childFrameShapes)
-    : pathNode(points)
-
-  Object.keys(attributes).map(attr => {
-    el.setAttribute(attr, attributes[ attr ])
-  })
-
-  return el
 }
 
 /**
@@ -245,7 +298,7 @@ const removeCoreProps = (type, attributes) => {
 }
 
 /**
- * Updates a Node from a FrameShape.
+ * Updates a Node from a Frame Shape.
  *
  * @param {Node} el
  * @param {FrameShape} frameShape
