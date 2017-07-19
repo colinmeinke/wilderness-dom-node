@@ -3,7 +3,7 @@
 A set of functions to convert between SVG DOM nodes,
 Plain Shape Objects and Frame Shapes.
 
-**Only 2.8kb gzipped.**
+**Only 2.9kb gzipped.**
 
 ## Definitions
 
@@ -18,7 +18,7 @@ The core properties of a Plain Shape Object can be found in the
 
 A Frame Shape is an object commonly used internally within Wilderness.
 A Frame Shape has two properties, `attributes` and a `points`
-[see the points spec](https://github.com/colinmeinke/points).
+([see the points spec](https://github.com/colinmeinke/points)).
 
 ## Functions
 
