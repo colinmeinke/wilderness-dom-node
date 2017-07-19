@@ -59,3 +59,29 @@ document.querySelector('svg').appendChild(
   node(frameShape)
 )
 ```
+
+## updateNode
+
+The `updateNode` function updates the attributes of a SVG DOM node given
+a Frame Shape.
+
+```js
+import { updateNode } from 'wilderness-dom-node'
+
+const frameShape = {
+  attributes: {
+    fill: 'yellow'
+  },
+  points: [
+    { x: 20, y: 20, moveTo: true }
+    { x: 80, y: 20 },
+    { x: 80, y: 80 },
+    { x: 20, y: 80 },
+    { x: 20, y: 20 }
+  ]
+}
+
+document.querySelector('svg').appendChild(
+  updateNode(document.querySelector('.blue-square'), frameShape)
+)
+```

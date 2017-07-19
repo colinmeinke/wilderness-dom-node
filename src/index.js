@@ -80,6 +80,30 @@ const nodeTypes = [
 const coreProps = type => nodeTypes.filter(node => node.type === type)[ 0 ].coreProps
 
 /**
+ * Diffs two objects and returns an object with remove and update props.
+ *
+ * @param {Object} current
+ * @param {Object} next
+ *
+ * @returns {Object}
+ *
+ * @example
+ * diff(current, next)
+ */
+const diff = (current, next) => {
+  const currentKeys = Object.keys(current)
+  const nextKeys = Object.keys(next)
+  const remove = currentKeys.filter(k => nextKeys.indexOf(k) === -1)
+
+  const update = nextKeys.filter(k => (
+    currentKeys.indexOf(k) !== -1 ||
+    current[ k ] !== next[ k ]
+  ))
+
+  return { remove, update }
+}
+
+/**
  * Creates a FrameShape from a Node.
  *
  * @param {Node} node
@@ -221,6 +245,47 @@ const removeCoreProps = (type, attributes) => {
 }
 
 /**
+ * Updates a Node from a FrameShape.
+ *
+ * @param {Node} el
+ * @param {FrameShape} frameShape
+ *
+ * @returns {Node}
+ *
+ * @example
+ * updateNode()
+ */
+const updateNode = (el, { attributes: nextAttributes, childFrameShapes, points }) => {
+  if (childFrameShapes) {
+    const childNodes = [ ...el.childNodes ].filter(validNode)
+
+    childFrameShapes.map((childFrameShape, i) => {
+      updateNode(childNodes[ i ], childFrameShape)
+    })
+  } else {
+    const nextPath = toPath(points)
+
+    if (nextPath !== el.getAttribute('d')) {
+      el.setAttribute('d', nextPath)
+    }
+  }
+
+  const { attributes: currentAttributes } = el
+
+  const { remove, update } = diff(currentAttributes, nextAttributes)
+
+  remove.map(attr => {
+    el.removeAttribute(attr)
+  })
+
+  update.map(attr => {
+    el.setAttribute(attr, nextAttributes[ attr ])
+  })
+
+  return el
+}
+
+/**
  * Is the node one of the accepted node types?
  *
  * @param {Node} node
@@ -232,4 +297,4 @@ const removeCoreProps = (type, attributes) => {
  */
 const validNode = ({ nodeName }) => nodeTypes.map(({ name }) => name).indexOf(nodeName) !== -1
 
-export { frameShape, node }
+export { frameShape, node, updateNode }
