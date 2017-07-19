@@ -2,7 +2,7 @@
 
 Converts SVG DOM node <> Frame Shape.
 
-**Only 2.7kb gzipped.**
+**Only 2.8kb gzipped.**
 
 Firstly, let's define a *Frame Shape*. A Frame Shape is an object
 commonly used internally within
