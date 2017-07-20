@@ -3,7 +3,7 @@
 A set of functions to convert between SVG DOM nodes,
 Plain Shape Objects and Frame Shapes.
 
-**Only 2.9kb gzipped.**
+**2.9kb gzipped.**
 
 ## Definitions
 
