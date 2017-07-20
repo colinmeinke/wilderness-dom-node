@@ -116,7 +116,5 @@ const frameShape = {
   ]
 }
 
-document.querySelector('svg').appendChild(
-  updateNode(document.querySelector('.blue-square'), frameShape)
-)
+updateNode(document.querySelector('.blue-square'), frameShape)
 ```
