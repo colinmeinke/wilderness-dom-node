@@ -348,6 +348,6 @@ const updateNode = (el, { attributes: nextAttributes, childFrameShapes, points }
  * @example
  * validNode(node)
  */
-const validNode = ({ nodeName }) => nodeTypes.map(({ name }) => name).indexOf(nodeName) !== -1
+const validNode = ({ nodeName }) => nodeTypes.map(({ type }) => type).indexOf(nodeName) !== -1
 
 export { frameShape, node, plainShapeObject, updateNode }
