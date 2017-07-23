@@ -342,35 +342,35 @@ const updateNode = (el, frameShp) => {
 const validFrameShape = frameShp => {
   if (__DEV__) {
     if (typeof frameShp !== 'object' || Array.isArray(frameShp)) {
-      throw TypeError(`frameShape must be of type object`)
+      throw new TypeError(`frameShape must be of type object`)
     }
 
     const { attributes, childFrameShapes, points } = frameShp
 
     if (typeof attributes === 'undefined') {
-      throw TypeError(`frameShape must include an attributes property`)
+      throw new TypeError(`frameShape must include an attributes property`)
     }
 
     if (typeof attributes !== 'object' || Array.isArray(attributes)) {
-      throw TypeError(`frameShape attributes property must be of type object`)
+      throw new TypeError(`frameShape attributes property must be of type object`)
     }
 
     if (typeof childFrameShapes === 'undefined' && typeof points === 'undefined') {
-      throw TypeError(`frameShape must have either a points or childFrameShapes property`)
+      throw new TypeError(`frameShape must have either a points or childFrameShapes property`)
     }
 
     if (points && (!Array.isArray(points))) {
-      throw TypeError(`frameShape points property must be of type array`)
+      throw new TypeError(`frameShape points property must be of type array`)
     }
 
     if (childFrameShapes) {
       if (!Array.isArray(childFrameShapes)) {
-        throw TypeError(`frameShape childFrameShapes property must be of type array`)
+        throw new TypeError(`frameShape childFrameShapes property must be of type array`)
       }
 
       childFrameShapes.map(childFrameShape => {
         if (typeof childFrameShape !== 'object' || typeof childFrameShape.attributes !== 'object') {
-          throw TypeError(`frameShape childFrameShapes property must be array of frameShapes`)
+          throw new TypeError(`frameShape childFrameShapes property must be array of frameShapes`)
         }
       })
     }
