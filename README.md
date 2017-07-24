@@ -1,9 +1,7 @@
-# Wilderness DOM node
+# Wilderness DOM node &middot; [![gzip size](http://img.badgesize.io/https://unpkg.com/wilderness-dom-node/dist/wilderness-dom-node.production.js?compression=gzip&label=gzip%20size&style=flat)](https://unpkg.com/wilderness-dom-node/dist/wilderness-dom-node.production.js) [![test coverage](https://img.shields.io/coveralls/colinmeinke/wilderness-dom-node/master.svg?style=flat)](https://coveralls.io/github/colinmeinke/wilderness-dom-node) [![travisci](https://img.shields.io/travis/colinmeinke/wilderness-dom-node.svg?style=flat)](https://travis-ci.org/colinmeinke/wilderness-dom-node) [![npm version](https://img.shields.io/npm/v/wilderness-dom-node.svg?style=flat)](https://www.npmjs.com/package/wilderness-dom-node)
 
 A set of functions to convert between SVG DOM nodes,
 Plain Shape Objects and Frame Shapes.
-
-**2.9kb gzipped.**
 
 ## Definitions
 
