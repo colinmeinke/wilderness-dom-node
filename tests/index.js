@@ -236,6 +236,21 @@ describe('plainShapeObject', () => {
 
     expect(plainShapeObject(el)).to.eql(expectedPlainShapeObject)
   })
+
+  it('should ignore blacklisted attributes', () => {
+    const el = createPath()
+
+    el.setAttribute('fill', 'yellow')
+    el.setAttribute('data-jsx-ext', 10)
+
+    const expectedPlainShapeObject = {
+      type: 'path',
+      d: 'M0,0H10',
+      fill: 'yellow'
+    }
+
+    expect(plainShapeObject(el)).to.eql(expectedPlainShapeObject)
+  })
 })
 
 describe('updateNode', () => {

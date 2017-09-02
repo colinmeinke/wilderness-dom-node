@@ -13,10 +13,18 @@ import { toPath, toPoints } from 'svg-points'
  *
  * @typedef {Object} NodeData
  *
- * @property {Object} attributes - All HTML attributes of the Node.
+ * @property {Object} attributes - All HTML attributes of the Node (excluding blacklist).
  * @property {Object[]} childNodes
  * @property {string} type - The nodeName of the Node.
  */
+
+/**
+ * Attributes to ignore.
+ */
+const attributeBlacklist = [
+  'data-jsx-ext',
+  'data-reactid'
+]
 
 /**
  * Wilderness' accepted node types.
@@ -178,7 +186,9 @@ const nodeData = el => {
 
   if (el.hasAttributes()) {
     [ ...attrs ].map(({ name, value }) => {
-      attributes[ name ] = value
+      if (attributeBlacklist.indexOf(name) === -1) {
+        attributes[ name ] = value
+      }
     })
   }
 
