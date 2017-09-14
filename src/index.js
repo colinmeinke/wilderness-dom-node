@@ -27,9 +27,9 @@ const attributeBlacklist = [
 ]
 
 /**
- * Wilderness' accepted node types.
+ * Wilderness' accepted node types core props.
  */
-const nodeTypes = [
+const nodeCoreProps = [
   {
     type: 'circle',
     coreProps: [ 'cx', 'cy', 'r' ]
@@ -65,6 +65,11 @@ const nodeTypes = [
 ]
 
 /**
+ * Wilderness' accepted node types.
+ */
+const nodeTypes = nodeCoreProps.map(({ type }) => type)
+
+/**
  * Core props for the defined node type.
  *
  * @param {string} type
@@ -74,7 +79,7 @@ const nodeTypes = [
  * @example
  * coreProps('rect')
  */
-const coreProps = type => nodeTypes.filter(node => node.type === type)[ 0 ].coreProps
+const coreProps = type => nodeCoreProps.filter(node => node.type === type)[ 0 ].coreProps
 
 /**
  * Diffs two objects and returns an object with remove and update props.
@@ -88,16 +93,21 @@ const coreProps = type => nodeTypes.filter(node => node.type === type)[ 0 ].core
  * diff(current, next)
  */
 const diff = (current, next) => {
-  const currentKeys = Object.keys(current)
-  const nextKeys = Object.keys(next)
-  const remove = currentKeys.filter(k => nextKeys.indexOf(k) === -1)
+  const result = { remove: [], update: [] }
 
-  const update = nextKeys.filter(k => (
-    currentKeys.indexOf(k) !== -1 ||
-    current[ k ] !== next[ k ]
-  ))
+  for (let currentKey in current) {
+    if (typeof next[ currentKey ] === 'undefined') {
+      result.remove.push(currentKey)
+    }
+  }
 
-  return { remove, update }
+  for (let nextKey in next) {
+    if (typeof current[ nextKey ] === 'undefined' || current[ nextKey ] !== next[ nextKey ]) {
+      result.update.push(nextKey)
+    }
+  }
+
+  return result
 }
 
 /**
@@ -162,9 +172,9 @@ const node = frameShp => {
       ? groupNode(childFrameShapes)
       : pathNode(points)
 
-    Object.keys(attributes).map(attr => {
+    for (let attr in attributes) {
       el.setAttribute(attr, attributes[ attr ])
-    })
+    }
 
     return el
   }
@@ -257,13 +267,13 @@ const plainShapeObjectFromAttrs = (type, attributes) => {
   const props = coreProps(type)
   const result = { type }
 
-  Object.keys(attributes).map(k => {
+  for (let k in attributes) {
     if (props.indexOf(k) !== -1) {
       const v = attributes[ k ]
       const n = Number(v)
       result[ k ] = Number.isNaN(n) ? v : n
     }
-  })
+  }
 
   return result
 }
@@ -283,11 +293,11 @@ const removeCoreProps = (type, attributes) => {
   const props = coreProps(type)
   const result = {}
 
-  Object.keys(attributes).map(k => {
+  for (let k in attributes) {
     if (props.indexOf(k) === -1) {
       result[ k ] = attributes[ k ]
     }
-  })
+  }
 
   return result
 }
@@ -301,40 +311,45 @@ const removeCoreProps = (type, attributes) => {
  * @returns {Node}
  *
  * @example
- * updateNode()
+ * updateNode(el, frameShape)
  */
 const updateNode = (el, frameShp) => {
-  if (validNode(el) && validFrameShape(frameShp)) {
-    const { attributes: nextAttributes, childFrameShapes, points } = frameShp
-
-    if (childFrameShapes) {
-      const childNodes = [ ...el.childNodes ].filter(validNodeType)
-
-      childFrameShapes.map((childFrameShape, i) => {
-        updateNode(childNodes[ i ], childFrameShape)
-      })
-    } else {
-      const nextPath = toPath(points)
-
-      if (nextPath !== el.getAttribute('d')) {
-        el.setAttribute('d', nextPath)
-      }
+  if (__DEV__) {
+    if (!validNode(el)) {
+      throw new TypeError(`The first argument of the updateNode function must be a valid DOM node`)
     }
 
-    const { attributes: currentAttributes } = el
-
-    const { remove, update } = diff(currentAttributes, nextAttributes)
-
-    remove.map(attr => {
-      el.removeAttribute(attr)
-    })
-
-    update.map(attr => {
-      el.setAttribute(attr, nextAttributes[ attr ])
-    })
-
-    return el
+    if (!validFrameShape(frameShp)) {
+      throw new TypeError(`The second argument of the updateNode function must be a valid frameShape`)
+    }
   }
+
+  if (frameShp.childFrameShapes) {
+    const childNodes = [ ...el.childNodes ].filter(validNodeType)
+
+    for (let i = 0, l = frameShp.childFrameShapes.length; i < l; i++) {
+      updateNode(childNodes[ i ], frameShp.childFrameShapes[ i ])
+    }
+  } else {
+    const nextPath = toPath(frameShp.points)
+
+    if (nextPath !== el.getAttribute('d')) {
+      el.setAttribute('d', nextPath)
+    }
+  }
+
+  const result = diff(el.attributes, frameShp.attributes)
+
+  for (let i = 0, l = result.remove.length; i < l; i++) {
+    el.removeAttribute(result.remove[ i ])
+  }
+
+  for (let i = 0, l = result.update.length; i < l; i++) {
+    const attr = result.update[ i ]
+    el.setAttribute(attr, frameShp.attributes[ attr ])
+  }
+
+  return el
 }
 
 /**
@@ -425,6 +440,6 @@ const validNode = el => {
  * @example
  * validNodeType(node)
  */
-const validNodeType = ({ nodeName }) => nodeTypes.map(({ type }) => type).indexOf(nodeName) !== -1
+const validNodeType = ({ nodeName }) => nodeTypes.indexOf(nodeName) !== -1
 
 export { frameShape, node, plainShapeObject, updateNode }
