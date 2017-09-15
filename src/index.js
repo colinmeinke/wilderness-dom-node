@@ -82,35 +82,6 @@ const nodeTypes = nodeCoreProps.map(({ type }) => type)
 const coreProps = type => nodeCoreProps.filter(node => node.type === type)[ 0 ].coreProps
 
 /**
- * Diffs two objects and returns an object with remove and update props.
- *
- * @param {Object} current
- * @param {Object} next
- *
- * @returns {Object}
- *
- * @example
- * diff(current, next)
- */
-const diff = (current, next) => {
-  const result = { remove: [], update: [] }
-
-  for (let currentKey in current) {
-    if (typeof next[ currentKey ] === 'undefined') {
-      result.remove.push(currentKey)
-    }
-  }
-
-  for (let nextKey in next) {
-    if (typeof current[ nextKey ] === 'undefined' || current[ nextKey ] !== next[ nextKey ]) {
-      result.update.push(nextKey)
-    }
-  }
-
-  return result
-}
-
-/**
  * Creates a FrameShape from a Node.
  *
  * @param {Node} node
@@ -313,7 +284,7 @@ const removeCoreProps = (type, attributes) => {
  * @example
  * updateNode(el, frameShape)
  */
-const updateNode = (el, frameShp) => {
+const updateNode = (el, frameShp, changes = []) => {
   if (__DEV__) {
     if (!validNode(el)) {
       throw new TypeError(`The first argument of the updateNode function must be a valid DOM node`)
@@ -324,29 +295,53 @@ const updateNode = (el, frameShp) => {
     }
   }
 
-  if (frameShp.childFrameShapes) {
-    const childNodes = [ ...el.childNodes ].filter(validNodeType)
+  const shouldApplyChanges = changes.length === 0
+  const currentAttributes = el.attributes
+  const nextAttributes = frameShp.attributes
+  const childFrameShapes = frameShp.childFrameShapes
+  const changesKey = changes.push({ el, remove: [], update: {} }) - 1
 
-    for (let i = 0, l = frameShp.childFrameShapes.length; i < l; i++) {
-      updateNode(childNodes[ i ], frameShp.childFrameShapes[ i ])
+  for (let k in currentAttributes) {
+    if (typeof nextAttributes[ k ] === 'undefined') {
+      changes[ changesKey ].remove.push(k)
     }
-  } else {
+  }
+
+  for (let k in nextAttributes) {
+    const c = currentAttributes[ k ]
+    const n = nextAttributes[ k ]
+
+    if (typeof c === 'undefined' || c !== n) {
+      changes[ changesKey ].update[ k ] = n
+    }
+  }
+
+  if (!childFrameShapes) {
     const nextPath = toPath(frameShp.points)
 
     if (nextPath !== el.getAttribute('d')) {
-      el.setAttribute('d', nextPath)
+      changes[ changesKey ].update.d = nextPath
+    }
+  } else {
+    const childNodes = [ ...el.childNodes ].filter(validNodeType)
+
+    for (let i = 0, l = childFrameShapes.length; i < l; i++) {
+      updateNode(childNodes[ i ], childFrameShapes[ i ], changes)
     }
   }
 
-  const result = diff(el.attributes, frameShp.attributes)
+  if (shouldApplyChanges) {
+    for (let i = 0, l = changes.length; i < l; i++) {
+      const { el: _el, remove, update } = changes[ i ]
 
-  for (let i = 0, l = result.remove.length; i < l; i++) {
-    el.removeAttribute(result.remove[ i ])
-  }
+      for (let _i = 0, _l = remove.length; _i < _l; _i++) {
+        _el.removeAttribute(remove[ _i ])
+      }
 
-  for (let i = 0, l = result.update.length; i < l; i++) {
-    const attr = result.update[ i ]
-    el.setAttribute(attr, frameShp.attributes[ attr ])
+      for (let k in update) {
+        _el.setAttribute(k, update[ k ])
+      }
+    }
   }
 
   return el
