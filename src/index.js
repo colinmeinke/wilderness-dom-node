@@ -65,9 +65,27 @@ const nodeCoreProps = [
 ]
 
 /**
+ * Generates Wilderness' accepted node types from core props object.
+ *
+ * @returns {string[]}
+ *
+ * @example
+ * getNodeTypes()
+ */
+const getNodeTypes = () => {
+  const types = []
+
+  for (let i = 0, l = nodeCoreProps.length; i < l; i++) {
+    types.push(nodeCoreProps[ i ].type)
+  }
+
+  return types
+}
+
+/**
  * Wilderness' accepted node types.
  */
-const nodeTypes = nodeCoreProps.map(({ type }) => type)
+const nodeTypes = getNodeTypes()
 
 /**
  * Core props for the defined node type.
@@ -79,7 +97,15 @@ const nodeTypes = nodeCoreProps.map(({ type }) => type)
  * @example
  * coreProps('rect')
  */
-const coreProps = type => nodeCoreProps.filter(node => node.type === type)[ 0 ].coreProps
+const coreProps = type => {
+  for (let i = 0, l = nodeCoreProps.length; i < l; i++) {
+    if (nodeCoreProps[ i ].type === type) {
+      return nodeCoreProps[ i ].coreProps
+    }
+  }
+
+  return []
+}
 
 /**
  * Creates a FrameShape from a Node.
@@ -93,13 +119,23 @@ const coreProps = type => nodeCoreProps.filter(node => node.type === type)[ 0 ].
  */
 const frameShape = el => {
   if (validNode(el)) {
-    const { attributes, childNodes, type } = nodeData(el)
+    const data = nodeData(el)
+    const attributes = data.attributes
+    const type = data.type
 
     if (type === 'g') {
-      return {
-        attributes,
-        childFrameShapes: childNodes.filter(validNodeType).map(frameShape)
+      const childNodes = data.childNodes
+      const childFrameShapes = []
+
+      for (let i = 0, l = childNodes.length; i < l; i++) {
+        const n = childNodes[ i ]
+
+        if (validNodeType(childNodes[ i ].nodeName)) {
+          childFrameShapes.push(frameShape(n))
+        }
       }
+
+      return { attributes, childFrameShapes }
     }
 
     return {
@@ -120,8 +156,18 @@ const frameShape = el => {
  * groupNode(childFrameShapes)
  */
 const groupNode = childFrameShapes => {
+  const nodes = []
+
+  for (let i = 0, l = childFrameShapes.length; i < l; i++) {
+    nodes.push(node(childFrameShapes[ i ]))
+  }
+
   const group = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-  childFrameShapes.map(node).map(n => group.appendChild(n))
+
+  for (let i = 0, l = nodes.length; i < l; i++) {
+    group.appendChild(nodes[ i ])
+  }
+
   return group
 }
 
@@ -137,11 +183,11 @@ const groupNode = childFrameShapes => {
  */
 const node = frameShp => {
   if (validFrameShape(frameShp)) {
-    const { attributes, childFrameShapes, points } = frameShp
+    const attributes = frameShp.attributes
 
-    const el = childFrameShapes
-      ? groupNode(childFrameShapes)
-      : pathNode(points)
+    const el = frameShp.childFrameShapes
+      ? groupNode(frameShp.childFrameShapes)
+      : pathNode(frameShp.points)
 
     for (let attr in attributes) {
       el.setAttribute(attr, attributes[ attr ])
@@ -162,18 +208,22 @@ const node = frameShp => {
  * nodeData(el)
  */
 const nodeData = el => {
-  const { attributes: attrs, childNodes, nodeName: type } = el
   const attributes = {}
 
   if (el.hasAttributes()) {
-    [ ...attrs ].map(({ name, value }) => {
+    const attrs = [ ...el.attributes ]
+
+    for (let i = 0, l = attrs.length; i < l; i++) {
+      const attr = attrs[ i ]
+      const name = attr.name
+
       if (attributeBlacklist.indexOf(name) === -1) {
-        attributes[ name ] = value
+        attributes[ name ] = attr.value
       }
-    })
+    }
   }
 
-  return { attributes, childNodes: [ ...childNodes ], type }
+  return { attributes, childNodes: [ ...el.childNodes ], type: el.nodeName }
 }
 
 /**
@@ -206,14 +256,23 @@ const pathNode = points => {
  */
 const plainShapeObject = el => {
   if (validNode(el)) {
-    const { attributes, childNodes, type } = nodeData(el)
+    const data = nodeData(el)
+    const attributes = data.attributes
+    const type = data.type
 
     if (type === 'g') {
-      return {
-        ...attributes,
-        type,
-        shapes: childNodes.filter(validNodeType).map(plainShapeObject)
+      const childNodes = data.childNodes
+      const shapes = []
+
+      for (var i = 0, l = childNodes.length; i < l; i++) {
+        const n = childNodes[ i ]
+
+        if (validNodeType(n.nodeName)) {
+          shapes.push(plainShapeObject(n))
+        }
       }
+
+      return { ...attributes, type, shapes }
     }
 
     return {
@@ -323,7 +382,16 @@ const updateNode = (el, frameShp, changes = []) => {
       changes[ changesKey ].update.d = nextPath
     }
   } else {
-    const childNodes = [ ...el.childNodes ].filter(validNodeType)
+    const allChildNodes = [ ...el.childNodes ]
+    const childNodes = []
+
+    for (let i = 0, l = allChildNodes.length; i < l; i++) {
+      const n = allChildNodes[ i ]
+
+      if (validNodeType(n.nodeName)) {
+        childNodes.push(n)
+      }
+    }
 
     for (let i = 0, l = childFrameShapes.length; i < l; i++) {
       updateNode(childNodes[ i ], childFrameShapes[ i ], changes)
@@ -332,7 +400,10 @@ const updateNode = (el, frameShp, changes = []) => {
 
   if (shouldApplyChanges) {
     for (let i = 0, l = changes.length; i < l; i++) {
-      const { el: _el, remove, update } = changes[ i ]
+      const change = changes[ i ]
+      const _el = change.el
+      const remove = change.remove
+      const update = change.update
 
       for (let _i = 0, _l = remove.length; _i < _l; _i++) {
         _el.removeAttribute(remove[ _i ])
@@ -365,7 +436,9 @@ const validFrameShape = frameShp => {
       throw new TypeError(`frameShape must be of type object`)
     }
 
-    const { attributes, childFrameShapes, points } = frameShp
+    const attributes = frameShp.attributes
+    const childFrameShapes = frameShp.childFrameShapes
+    const points = frameShp.points
 
     if (typeof attributes === 'undefined') {
       throw new TypeError(`frameShape must include an attributes property`)
@@ -388,11 +461,13 @@ const validFrameShape = frameShp => {
         throw new TypeError(`frameShape childFrameShapes property must be of type array`)
       }
 
-      childFrameShapes.map(childFrameShape => {
+      for (let i = 0, l = childFrameShapes.length; i < l; i++) {
+        const childFrameShape = childFrameShapes[ i ]
+
         if (typeof childFrameShape !== 'object' || typeof childFrameShape.attributes !== 'object') {
           throw new TypeError(`frameShape childFrameShapes property must be array of frameShapes`)
         }
-      })
+      }
     }
   }
 
@@ -417,7 +492,7 @@ const validNode = el => {
       throw new TypeError(`el must be a DOM node`)
     }
 
-    if (!validNodeType(el)) {
+    if (!validNodeType(el.nodeName)) {
       throw new TypeError(`el must be an SVG basic shape or group element`)
     }
   }
@@ -426,15 +501,15 @@ const validNode = el => {
 }
 
 /**
- * Is a Node one of the accepted node types?
+ * Is a node name one of the accepted node types?
  *
- * @param {Node} node
+ * @param {string} nodeName
  *
  * @returns {boolean}
  *
  * @example
- * validNodeType(node)
+ * validNodeType(nodeName)
  */
-const validNodeType = ({ nodeName }) => nodeTypes.indexOf(nodeName) !== -1
+const validNodeType = nodeName => nodeTypes.indexOf(nodeName) !== -1
 
 export { frameShape, node, plainShapeObject, updateNode }
