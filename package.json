@@ -82,9 +82,10 @@
     "rollup-plugin-node-resolve": "^3.0.0",
     "rollup-plugin-replace": "^1.1.1",
     "rollup-plugin-uglify": "^2.0.1",
-    "semantic-release": "^6.3.6",
+    "semantic-release": "^15.9.9",
     "snazzy": "^7.0.0",
-    "standard": "^10.0.2"
+    "standard": "^10.0.2",
+    "travis-deploy-once": "^5.0.2"
   },
   "homepage": "https://github.com/colinmeinke/wilderness-dom-node#readme",
   "license": "MIT",
@@ -105,9 +106,10 @@
     "fix": "standard --fix",
     "lint": "standard --verbose | snazzy",
     "prepublish": "npm run tidy && npm run build",
-    "semantic-release": "semantic-release pre && npm publish && semantic-release post",
+    "semantic-release": "semantic-release",
     "test": "karma start --single-run --browsers ChromeHeadless karma.conf.js",
-    "tidy": "rimraf modules cjs dist"
+    "tidy": "rimraf modules cjs dist",
+    "travis-deploy-once": "travis-deploy-once"
   },
   "version": "0.0.0-development"
 }
