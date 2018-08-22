@@ -5,12 +5,15 @@ cache:
 notifications:
   email: false
 node_js:
-  - '7'
+  - '10'
+  - '8'
   - '6'
 dist: trusty
 sudo: required
 addons:
   chrome: stable
+install:
+  - yarn install --ignore-engines
 before_script:
   - npm prune
 script:
