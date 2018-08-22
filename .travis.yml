@@ -8,6 +8,7 @@ node_js:
   - '7'
   - '6'
 dist: trusty
+sudo: required
 addons:
   chrome: stable
 before_script:
