@@ -27,7 +27,7 @@ Shape Object. It will also add all of the node's HTML attributes as
 properties of the Plain Shape Object.
 
 ```js
-import { frameShape } from 'wilderness-dom-node'
+import { plainShapeObject } from 'wilderness-dom-node'
 
 console.log(
   plainShapeObject(document.querySelector('rect'))
